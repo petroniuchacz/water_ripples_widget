@@ -9,34 +9,42 @@ class SingleRipple extends StatelessWidget {
 
   const SingleRipple({
     Key key,
-    this.width,
-    this.radius,
-    this.child,
-    this.center
-  }) : super(key: key);
+    @required this.radius,
+    @required this.child,
+    @required this.center,
+    this.width = 18,
+  }) :  assert(radius != null),
+        assert(child != null),
+        assert(center != null),
+        assert(width >= 10),
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final layerNum = 15;
+    final layerNum = (width / 2).ceil();
     final internalRadius = radius - width;
-    return Stack(
-      children: <Widget>[
-        child,
-        for(int i in Iterable<int>.generate(layerNum))
-          _getLayer(i, layerNum, child),
-        ClipPath(
-          clipper: CircleClip(
-            center: center,
-            radius: internalRadius,
+    final RenderBox box = context.findRenderObject();
+    final localOffset = box != null ? box.globalToLocal(center) : null;
+    return localOffset != null
+        ? Stack(
+        children: <Widget>[
+          child,
+          for(int i in Iterable<int>.generate(layerNum))
+            _getLayer(i, layerNum, child, localOffset),
+          ClipPath(
+            clipper: CircleClip(
+              center: localOffset,
+              radius: internalRadius,
+            ),
+            child: child,
+            clipBehavior: Clip.hardEdge,
           ),
-          child: child,
-          clipBehavior: Clip.hardEdge,
-        ),
-      ],
-    );
+        ],
+      )
+        : child;
   }
 
-  Widget _getLayer(int i, int layerNum, Widget child) {
+  Widget _getLayer(int i, int layerNum, Widget child, Offset center) {
     final currentRadius = radius - i/layerNum * width;
     final alphaCoef = 0.15;
     final scaleCoef = 0.006 * radius / 100;
